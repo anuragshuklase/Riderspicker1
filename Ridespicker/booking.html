@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book a Ride | Uber Web Clone</title>
+  <link rel="stylesheet" href="booking_style.css" />
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+</head>
+
+<body>
+    <!-- Navigation Bar -->
+    <div class="navContainerWrap">
+        <div class="nav-left">
+            <p class="logo"><a href="index.html">RidesPicker</a></p>
+            <!-- Updated About Link -->
+            <div class="text-icon">
+                <p class="menu-list"><a href="index.html#started-section">About</a></p>
+            </div>
+        </div>
+        <div class="nav-right">
+            <p class="menu-list"><a href="help.html">Help</a></p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Location Search -->
+        <div class="location-inputs">
+            <h2>Book Your Ride</h2>
+            <button onclick="getLiveLocation()">Use My Current Location</button>
+            <input type="text" id="pickup" placeholder="Enter Pickup Location" />
+            <input type="text" id="drop" placeholder="Enter Drop Location" />
+            <button onclick="locateAndShow()">Find Route</button>
+        </div>
+
+        <!-- Map -->
+        <div id="map" style="height:400px; margin-top:20px;"></div>
+
+        <!-- Rides Listing -->
+        <div id="ride-options" style="margin-top:20px;"></div>
+
+        <!-- Start Ride Button -->
+        <div id="start-ride" style="margin-top:20px; display:none;"></div>
+    </div>
+
+    <script>
+        let map, directionsService, directionsRenderer, currentLocation;
+        let selectedRide = null;
+
+        function initMap() {
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer();
+
+            map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 7,
+                center: { lat: 28.6139, lng: 77.2090 },
+            });
+
+            directionsRenderer.setMap(map);
+
+            const pickupInput = document.getElementById("pickup");
+            const dropInput = document.getElementById("drop");
+            new google.maps.places.Autocomplete(pickupInput);
+            new google.maps.places.Autocomplete(dropInput);
+        }
+        window.initMap = initMap;
+
+        function getLiveLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        currentLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                        };
+                        const geocoder = new google.maps.Geocoder();
+                        geocoder.geocode({ location: currentLocation }, (results, status) => {
+                            if (status === "OK" && results[0]) {
+                                document.getElementById("pickup").value = results[0].formatted_address;
+                                map.setCenter(currentLocation);
+                                new google.maps.Marker({
+                                    position: currentLocation,
+                                    map: map,
+                                    title: "Your Location",
+                                });
+                            } else {
+                                alert("Unable to fetch your location. Please try again.");
+                            }
+                        });
+                    },
+                    () => {
+                        alert("Geolocation failed. Please enable location services.");
+                    }
+                );
+            } else {
+                alert("Geolocation is not supported by your browser.");
+            }
+        }
+
+        function locateAndShow() {
+            const pickup = document.getElementById("pickup").value;
+            const drop = document.getElementById("drop").value;
+
+            if (!pickup || !drop) {
+                alert("Please enter both pickup and drop locations!");
+                return;
+            }
+
+            const request = {
+                origin: pickup,
+                destination: drop,
+                travelMode: google.maps.TravelMode.DRIVING,
+            };
+
+            directionsService.route(request, function (result, status) {
+                if (status === "OK") {
+                    directionsRenderer.setDirections(result);
+                    const distanceText = result.routes[0].legs[0].distance.text;
+                    const distanceKm = parseFloat(distanceText.replace(" km", ""));
+                    if (isNaN(distanceKm) || distanceKm <= 0) {
+                        alert("Invalid distance calculated. Please check the locations.");
+                        return;
+                    }
+                    showRideOptions(distanceKm);
+                    document.getElementById("start-ride").style.display = "none";
+                } else {
+                    alert("Could not find the route. Please check locations.");
+                }
+            });
+        }
+
+        function showRideOptions(km) {
+            const rideOptions = [
+                { type: "Bike", price: calculatePrice(8, km) },
+                { type: "Scooty", price: calculatePrice(10, km) },
+                { type: "Auto Rickshaw", price: calculatePrice(15, km) },
+                { type: "Economy Cab", price: calculatePrice(25, km) },
+                { type: "Shared Cab", price: calculatePrice(18, km) },
+                { type: "Luxury Car", price: calculatePrice(50, km) }
+            ];
+
+            rideOptions.sort((a, b) => a.price - b.price);
+
+            const rideDiv = document.getElementById("ride-options");
+            rideDiv.innerHTML = "<h3>Available Rides:</h3>";
+
+            rideOptions.forEach((ride, index) => {
+                rideDiv.innerHTML += `
+                    <div class="ride-option" id="ride-${index}" style="margin-bottom:10px;">
+                        <strong>${ride.type}</strong>  ₹${ride.price}
+                        <button onclick="selectRide('${ride.type}', ${ride.price}, ${index})" style="margin-left:10px;">Select</button>
+                    </div>
+                `;
+            });
+        }
+
+        function selectRide(type, price, index) {
+            selectedRide = { type, price };
+
+            const allRides = document.querySelectorAll(".ride-option");
+            allRides.forEach((rideDiv) => {
+                rideDiv.style.backgroundColor = "white";
+                rideDiv.style.border = "1px solid #ddd";
+                rideDiv.style.padding = "10px";
+                rideDiv.style.borderRadius = "5px";
+            });
+
+            const selectedDiv = document.getElementById(`ride-${index}`);
+            selectedDiv.style.backgroundColor = "#dff0d8"; 
+            selectedDiv.style.border = "2px solid green";
+
+            document.getElementById("start-ride").innerHTML = `
+                <h3>Selected Ride:</h3>
+                <p><strong>${type}</strong>  ₹${price}</p>
+                <button onclick="startRide()">Start Ride</button>
+            `;
+            document.getElementById("start-ride").style.display = "block";
+        }
+
+        function calculatePrice(baseFare, km) {
+            if (isNaN(km) || km <= 0) {
+                console.error("Invalid distance:", km);
+                return 0;
+            }
+            return Math.round(baseFare + km * 5);
+        }
+
+        function startRide() {
+            if (!selectedRide) {
+                alert("Please select a ride first!");
+                return;
+            }
+            alert(`Your ${selectedRide.type} ride has started! Fare: ₹${selectedRide.price}`);
+            document.getElementById("start-ride").style.display = "none";
+        }
+    </script>
+
+    <!-- Google Maps API -->
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDPOeBDkJiaqtT3_RGFYwYVzvsog27l974&callback=initMap&libraries=places">
+    </script>
+</body>
+</html>

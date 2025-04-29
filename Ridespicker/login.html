@@ -1,0 +1,96 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <title>Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+  <link rel="stylesheet" type="text/css" href="login_style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href='https://fonts.googleapis.com/css?family=Titillium+Web:400,300,600' rel='stylesheet'>  
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.1/css/all.css">
+</head>
+
+<body class="body">
+
+  <!-- Navigation Bar -->
+  <div class="navContainerWrap">
+    <div class="nav-left">
+       <p class="logo">RidesPicker</p>
+      <!-- <p class="menu-list"><a href="index.html">Ride</a></p>
+      <p class="menu-list"><a href="index.html">Drive</a></p>
+      <p class="menu-list"><a href="index.html">Business</a></p> -->
+      <!-- <p class="menu-list">About</p> -->
+    </div>
+    <div class="nav-right">
+      <!-- <p class="menu-list">EN</p> -->
+      <p class="menu-list"><a href="help.html">Help</a></p>
+      <p class="login-btn"><a href="login.html">Log In</a></p>
+      <p class="signup-btn"><a href="signup.html">Sign up</a></p>
+    </div>
+  </div>
+
+  <!-- Login Form -->
+  <div class="login-page">
+    <div class="form">
+      <form id="loginForm">
+        <lottie-player src="https://assets4.lottiefiles.com/datafiles/XRVoUu3IX4sGWtiC3MPpFnJvZNq7lVWDCa8LSqgS/profile.json" background="transparent" speed="1" loop autoplay></lottie-player>
+
+        <input type="email" id="loginEmail" placeholder="Email" required />
+        <input type="password" id="loginPassword" placeholder="Password" required />
+        <i class="fas fa-eye" onclick="show()"></i><br><br>
+
+        <button type="submit">LOGIN</button>
+        <p class="message" id="errorMsg"></p>
+      </form>
+
+      <form class="login-form">
+        <button type="button" onclick="window.location.href='signup.html'">SIGN UP</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toggle Password Visibility -->
+  <script>
+    function show() {
+      const password = document.getElementById("loginPassword");
+      password.type = password.type === "password" ? "text" : "password";
+    }
+  </script>
+
+  <!-- Firebase SDKs & Auth Code -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB4HS-7cwmMoD-1lMQf4IDZEH2R6_km0Uo",
+      authDomain: "uberclone-98aea.firebaseapp.com",
+      projectId: "uberclone-98aea",
+      storageBucket: "uberclone-98aea.appspot.com",
+      messagingSenderId: "116105877008",
+      appId: "1:116105877008:web:7fc4076dff4a0ce0eb1c95"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById("loginEmail").value;
+      const password = document.getElementById("loginPassword").value;
+      const errorMsg = document.getElementById("errorMsg");
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        alert("Login successful!");
+        window.location.href = "booking.html"; // Redirect to booking page
+      } catch (error) {
+        errorMsg.textContent = "Invalid email or password.";
+        console.error(error.message);
+      }
+    });
+  </script>
+</body>
+</html>
